@@ -1,0 +1,194 @@
+# Technical Report: Axle Shock Mount Redesign
+
+*Working engineering document. Grows as the project progresses.*
+
+---
+
+## 1. Scope
+
+Redesign of a folded weld-on rear axle shock mount bracket for 3.25"
+axle housings (F-150 / Tacoma class). Baseline geometry reverse-engineered
+from commercial aftermarket parts documented to fail via bending fatigue
+at the saddle radius and hole tearing.
+
+---
+
+## 2. Nomenclature
+
+| Symbol | Description | Unit |
+|--------|-------------|------|
+| $m$ | Vehicle mass | kg |
+| $b$ | Corner weight bias (rear axle share) | – |
+| $n$ | Jounce G-load | – |
+| $g$ | Gravitational acceleration (9.81) | m/s² |
+| $\theta$ | Shock mounting angle from horizontal | deg |
+| $F_s$ | Axial shock force (per bracket) | N |
+| $M$ | Bending moment at saddle | N·mm |
+| $Z$ | Section modulus of bracket cross-section | mm³ |
+| $\sigma_b$ | Bending stress at saddle | MPa |
+| $\tau$ | Shear stress at bolt hole | MPa |
+| $\sigma_a$ | Alternating stress amplitude | MPa |
+| $\sigma_m$ | Mean stress | MPa |
+| $S_e$ | Endurance limit (corrected) | MPa |
+| $S_u$ | Ultimate tensile strength | MPa |
+| $n_f$ | Fatigue safety factor | – |
+
+---
+
+## 3. Governing Equations
+
+### 3.1 Dynamic load at the shock eyelet
+
+Static load carried by one bracket:
+
+$$W_{static} = \frac{m \cdot b \cdot g}{2}$$
+
+Dynamic load from jounce impact:
+
+$$F_{dynamic} = W_{static} \cdot n$$
+
+Resolved along the shock axis:
+
+$$F_s = \frac{F_{dynamic}}{\sin\theta}$$
+
+### 3.2 Bending moment at the saddle
+
+$$M = F_s \cdot H_{hole}$$
+
+### 3.3 Section modulus of the folded bracket
+
+Modeled as two parallel flanges of thickness $t$, height $h$, separated
+by inner span $d$, bending about the horizontal saddle axis:
+
+$$I_{flange} = \frac{t \cdot h^3}{12}$$
+
+$$A_{flange} = t \cdot h$$
+
+$$I_{total} = 2 I_{flange} + 2 A_{flange} \left(\frac{d}{2}\right)^2$$
+
+$$Z = \frac{I_{total}}{h/2}$$
+
+### 3.4 Bending stress at the saddle
+
+$$\sigma_b = \frac{M}{Z}$$
+
+### 3.5 Shear / bearing stress at the bolt hole
+
+Bolt in double shear through two flanges:
+
+$$\tau = \frac{F_s}{2 \cdot D_{hole} \cdot t}$$
+
+### 3.6 Fatigue — modified Goodman criterion
+
+Alternating and mean stress:
+
+$$\sigma_a = \frac{\sigma_{max} - \sigma_{min}}{2}, \quad
+\sigma_m = \frac{\sigma_{max} + \sigma_{min}}{2}$$
+
+Goodman safety factor for infinite life ($N > 10^6$):
+
+$$\frac{1}{n_f} = \frac{\sigma_a}{S_e} + \frac{\sigma_m}{S_u}$$
+
+Bracket passes infinite-life check when $n_f \geq 1.5$.
+
+---
+
+## 4. Optimization Framework
+
+### 4.1 Objective
+
+Minimize peak von Mises stress at the saddle radius and bolt hole rim,
+subject to a mass ceiling comparable to the baseline (~0.26 kg).
+
+### 4.2 Design variables
+
+| Variable | Baseline | Redesign range | Effect |
+|----------|----------|----------------|--------|
+| $R_{bend}$ | 4.8 mm | 4.8 – 8.0 mm | ↓ stress concentration |
+| $H_{margin}$ | 20.0 mm | 12 – 20 mm | ↓ mass, ↑ hole tearing risk |
+| $W_{gusset}$ | 38.1 mm | 25 – 45 mm | ↑ stiffness, ↑ mass |
+| $H_{gusset}$ | 45.0 mm | 35 – 60 mm | ↑ stiffness, ↑ mass |
+| Doubler ring thickness | 0 mm | 0 – 3 mm | ↓ hole stress, ↑ mass |
+
+### 4.3 Fixed parameters (vehicle interface — cannot change)
+
+$R_{axle}$, $S_{span}$, $D_{hole}$, $H_{hole}$, $T_{wall}$
+
+### 4.4 Constraints
+
+- Yield: $\sigma_{max} \leq 0.67 \cdot S_y$ (design factor on yield)
+- Fatigue: $n_f \geq 1.5$
+- Manufacturing: $R_{bend} \geq T_{wall}$ (press-brake rule)
+- Packaging: no interference with leaf spring, brake line, or shock body
+- Weld access: minimum 6 mm clearance on all weld paths
+
+### 4.5 Optimization method
+
+Manual parametric sweep; one variable changed at a time, held against
+the baseline FEA setup, peak stress recorded. Convergence declared when
+marginal stress reduction per unit mass drops below 5%.
+
+---
+
+## 5. Variable Dependency Map
+
+```
+   Vehicle mass (m)
+        │
+        ▼
+   Corner load (W_static) ───► Jounce G-load (n)
+        │
+        ▼
+   Dynamic force (F_dynamic)
+        │
+        ▼
+   Shock angle (θ) ────────► Axial shock force (F_s)
+        │
+        ▼
+   Hole height (H_hole) ───► Bending moment (M)
+        │
+        ▼
+   Wall thickness (t) ─────┐
+   Flange height (h) ──────┼──► Section modulus (Z)
+   Clevis span (d) ────────┘
+        │
+        ▼
+   Bending stress (σ_b) ───► Fatigue safety factor (n_f)
+        │
+        ▼
+   Peak von Mises (FEA) ───► Redesign decision
+```
+
+Changes to any input ripple down. The redesign targets the variables
+in the middle of the chain (t, R_bend, gusset geometry) because they
+alter stress without affecting the vehicle interface.
+
+---
+
+## 6. Assumptions & Justifications
+
+| Assumption | Value | Justification |
+|-----------|-------|---------------|
+| Bracket depth $W_{depth}$ | 60 mm | Matches commercial weld-on tabs |
+| Front lip height $H_{front}$ | 35 mm | Shock body clearance |
+| Bend radius $R_{bend}$ | 4.8 mm | Press-brake DFM rule ($= t$) |
+| Gusset spine width | 38.1 mm | Matches clevis span |
+| Gusset spine height | 45 mm | 75% of bracket depth |
+| K-factor | 0.44 | Inventor default for steel |
+| Jounce G-load | 3.5 | Off-road impact per blueprint |
+| Corner bias | 0.55 | Rear-axle static weight share |
+
+Update this table any time a value changes.
+
+---
+
+## 7. Results Log
+
+*(populated during Phase 2 and Phase 4)*
+
+| Run | Configuration | F_s (N) | σ_b (MPa) | n_f | Notes |
+|-----|---------------|---------|-----------|-----|-------|
+| 1 | Baseline | TBD | TBD | TBD | FEA pending |
+| 2 | Redesign | TBD | TBD | TBD | Pending |
+
+---
