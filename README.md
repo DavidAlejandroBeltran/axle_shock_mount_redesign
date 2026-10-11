@@ -15,7 +15,7 @@ rings, DFM drain notches, and optimized gusset geometry.
 
 ## Roadmap:
 - [x] **Phase 1** — Python load engine & material database
-- [ ] **Phase 2** — Baseline CAD model & FEA failure mapping
+- [x] **Phase 2** — Baseline CAD model & FEA failure mapping
 - [ ] **Phase 3** — Parametric redesign & DFM
 - [ ] **Phase 4** — Comparative FEA validation & portfolio PDF
 
